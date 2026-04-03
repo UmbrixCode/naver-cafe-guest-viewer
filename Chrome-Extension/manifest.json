@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "네이버 카페 검색 경유 뷰어",
+  "version": "1.0",
+  "description": "비가입 네이버 카페 글을 검색 경유로 조회합니다",
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "https://cafe.naver.com/*",
+    "https://m.cafe.naver.com/*",
+    "https://apis.naver.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

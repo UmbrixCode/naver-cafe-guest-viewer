@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>네이버 카페 검색 경유 뷰어</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      font-size: 15px;
+      color: #333;
+      background: #f5f6f8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 16px;
+    }
+    /* PC 환경에서 더 넓게 표시 */
+    @media (min-width: 768px) {
+      .container {
+        max-width: 600px;
+        padding: 40px 24px;
+      }
+    }
+    h1 {
+      font-size: 20px;
+      color: #03c75a;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #03c75a;
+    }
+    .btn-process {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      background: #03c75a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      -webkit-appearance: none;
+      transition: background 0.2s;
+    }
+    .btn-process:active { background: #02a34a; }
+    .btn-process:disabled { background: #ccc; }
+
+    #result {
+      display: none;
+      margin-top: 16px;
+    }
+    #result.show { display: block; }
+    .result-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .info-row {
+      display: flex;
+      padding: 6px 0;
+      font-size: 14px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .info-row:last-of-type { border-bottom: none; }
+    .info-label {
+      color: #888;
+      min-width: 60px;
+      flex-shrink: 0;
+    }
+    .info-value {
+      color: #333;
+      word-break: break-all;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .btn-link {
+      flex: 1;
+      display: block;
+      padding: 12px;
+      text-align: center;
+      text-decoration: none;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+    .btn-link:active { opacity: 0.8; }
+    .btn-search { background: #4285f4; }
+    .btn-direct { background: #666; }
+    .error-msg {
+      text-align: center;
+      color: #e74c3c;
+      padding: 12px;
+      font-size: 14px;
+    }
+    .loading {
+      text-align: center;
+      color: #888;
+      padding: 12px;
+      font-size: 14px;
+    }
+    .paste-hint {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>네이버 카페 뷰어</h1>
+    <p class="subtitle">비가입 카페 글을 검색 경유로 조회합니다</p>
+
+    <div class="card">
+      <label for="urlInput">카페 글 URL</label>
+      <textarea id="urlInput" placeholder="네이버 카페 글 URL을 붙여넣으세요&#10;예: https://cafe.naver.com/카페명/글번호"></textarea>
+      <button class="btn-process" id="btnProcess">조회</button>
+      <p class="paste-hint">네이버 앱에서 공유 → 링크 복사 후 붙여넣기</p>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    // ============================================================
+    // 네이버 카페 검색 경유 뷰어 - 모바일 웹 버전
+    // Chrome 확장 없이 동작하는 독립형 웹 페이지
+    // ============================================================
+
+    const urlInput = document.getElementById("urlInput");
+    const btnProcess = document.getElementById("btnProcess");
+    const resultDiv = document.getElementById("result");
+
+
+    // ------------------------------------------------------------
+    // parseCafeUrl(cafeUrl)
+    // 네이버 카페 URL을 파싱하여 clubId, cafeName, articleId를 추출한다.
+    //
+    // 지원 형태:
+    //   형태1: https://cafe.naver.com/f-e/cafes/29657201/articles/1859
+    //   형태2: https://cafe.naver.com/diveplan/1859
+    //   형태3: https://cafe.naver.com/diveplan?iframe_url=...clubid=29657201&articleid=1859...
+    // ------------------------------------------------------------
+    function parseCafeUrl(cafeUrl) {
+      let clubId = null;
+      let cafeName = null;
+      let articleId = null;
+
+      // URL 디코딩 (이중/삼중 인코딩 대응)
+      let decoded = cafeUrl;
+      for (let i = 0; i < 3; i++) {
+        decoded = decodeURIComponent(decoded);
+      }
+
+      // 형태1: /f-e/cafes/클럽ID/articles/글번호
+      let match = decoded.match(/(?:m\.)?cafe\.naver\.com\/f-e\/cafes\/(\d+)\/articles\/(\d+)/);
+      if (match) {
+        return { clubId: match[1], cafeName: null, articleId: match[2] };
+      }
+
+      // 형태2: /카페명/글번호
+      match = decoded.match(/(?:m\.)?cafe\.naver\.com\/([a-zA-Z0-9_-]+)\/(\d+)(?:\?|$)/);
+      if (match) {
+        return { clubId: null, cafeName: match[1], articleId: match[2] };
+      }
+
+      // 형태3: iframe_url 파라미터에서 추출
+      const matchCafe = decoded.match(/(?:m\.)?cafe\.naver\.com\/([a-zA-Z0-9_-]+)\?/);
+      if (matchCafe) cafeName = matchCafe[1];
+
+      const matchClub = decoded.match(/clubid=(\d+)/i);
+      const matchArticle = decoded.match(/articleid=(\d+)/i);
+
+      if (matchClub) clubId = matchClub[1];
+      if (matchArticle) articleId = matchArticle[1];
+
+      if (articleId) {
+        return { clubId, cafeName, articleId };
+      }
+
+      return { clubId: null, cafeName: null, articleId: null };
+    }
+
+
+    // ------------------------------------------------------------
+    // processUrl(cafeUrl)
+    // URL을 파싱하고 검색 경유 URL을 생성한다.
+    //
+    // 웹 페이지에서는 CORS 제한으로 네이버 API 직접 호출이 불가하므로,
+    // 카페명 + 글번호 기반 검색 URL을 사용한다.
+    // ------------------------------------------------------------
+    function processUrl(cafeUrl) {
+      const parsed = parseCafeUrl(cafeUrl);
+      let { clubId, cafeName, articleId } = parsed;
+
+      if (!articleId) {
+        return { success: false, message: "URL 형식이 맞지 않아요.\n네이버 카페 글 URL을 입력해주세요." };
+      }
+
+      // 검색 경유 URL 생성
+      let searchUrl = null;
+      if (cafeName) {
+        // 카페명이 있으면 네이버 통합검색으로 검색
+        const query = encodeURIComponent(`site:cafe.naver.com/${cafeName} ${articleId}`);
+        searchUrl = `https://search.naver.com/search.naver?query=${query}`;
+      } else if (clubId) {
+        // 클럽ID만 있으면 카페 검색에서 글번호로 검색
+        const query = encodeURIComponent(articleId);
+        searchUrl = `https://section.cafe.naver.com/ca-fe/home/search/articles?q=${query}`;
+      }
+
+      // 직접 접근 URL
+      const directUrl = cafeName
+        ? `https://cafe.naver.com/${cafeName}/${articleId}`
+        : `https://cafe.naver.com/f-e/cafes/${clubId}/articles/${articleId}`;
+
+      return {
+        success: true,
+        clubId,
+        cafeName,
+        articleId,
+        searchUrl,
+        directUrl
+      };
+    }
+
+
+    // ------------------------------------------------------------
+    // escapeHtml(str)
+    // XSS 방지를 위한 HTML 이스케이프
+    // ------------------------------------------------------------
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+
+    // ------------------------------------------------------------
+    // showResult(result)
+    // 처리 결과를 화면에 표시한다.
+    // ------------------------------------------------------------
+    function showResult(result) {
+      if (!result.success) {
+        resultDiv.innerHTML = '<div class="result-card"><p class="error-msg">'
+          + result.message.replace(/\n/g, "<br>") + '</p></div>';
+        resultDiv.classList.add("show");
+        return;
+      }
+
+      let html = '<div class="result-card">';
+
+      // 정보 표시
+      if (result.cafeName) {
+        html += '<div class="info-row"><span class="info-label">카페명</span>'
+          + '<span class="info-value">' + escapeHtml(result.cafeName) + '</span></div>';
+      }
+      if (result.clubId) {
+        html += '<div class="info-row"><span class="info-label">클럽ID</span>'
+          + '<span class="info-value">' + escapeHtml(result.clubId) + '</span></div>';
+      }
+      html += '<div class="info-row"><span class="info-label">글번호</span>'
+        + '<span class="info-value">' + escapeHtml(result.articleId) + '</span></div>';
+
+      // 버튼 영역
+      html += '<div class="btn-group">';
+      if (result.searchUrl) {
+        html += '<a class="btn-link btn-search" href="' + escapeHtml(result.searchUrl)
+          + '" target="_blank" rel="noopener">검색 경유로 열기</a>';
+      }
+      html += '<a class="btn-link btn-direct" href="' + escapeHtml(result.directUrl)
+        + '" target="_blank" rel="noopener">직접 열기</a>';
+      html += '</div></div>';
+
+      resultDiv.innerHTML = html;
+      resultDiv.classList.add("show");
+    }
+
+
+    // ------------------------------------------------------------
+    // 이벤트 핸들러
+    // ------------------------------------------------------------
+
+    // 조회 버튼 클릭
+    btnProcess.addEventListener("click", () => {
+      const url = urlInput.value.trim();
+      if (!url) {
+        resultDiv.innerHTML = '<div class="result-card"><p class="error-msg">URL을 입력해주세요</p></div>';
+        resultDiv.classList.add("show");
+        return;
+      }
+
+      const result = processUrl(url);
+      showResult(result);
+    });
+
+    // Enter 키 지원 (모바일 키보드의 엔터)
+    urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        btnProcess.click();
+      }
+    });
+
+    // 붙여넣기 시 자동 조회
+    urlInput.addEventListener("paste", () => {
+      setTimeout(() => {
+        const val = urlInput.value.trim();
+        if (val && val.includes("cafe.naver.com")) {
+          btnProcess.click();
+        }
+      }, 100);
+    });
+  </script>
+</body>
+</html>
