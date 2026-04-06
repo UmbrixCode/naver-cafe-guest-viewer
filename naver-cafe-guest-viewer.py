@@ -22,8 +22,8 @@ def parse_cafe_url(cafe_url):
     for _ in range(3):
         decoded = urllib.parse.unquote(decoded)
 
-    # 형태1: /f-e/cafes/클럽ID/articles/글번호
-    match = re.search(r'(?:m\.)?cafe\.naver\.com/f-e/cafes/(\d+)/articles/(\d+)', decoded)
+    # 형태1: /f-e/cafes/클럽ID/articles/글번호 또는 /ca-fe/web/cafes/클럽ID/articles/글번호
+    match = re.search(r'(?:m\.)?cafe\.naver\.com/(?:f-e|ca-fe/web)/cafes/(\d+)/articles/(\d+)', decoded)
     if match:
         club_id = match.group(1)
         article_id = match.group(2)

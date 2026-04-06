@@ -31,14 +31,16 @@ function parseCafeUrl(cafeUrl) {
 
   // ---- 형태1 매칭 ----
   // URL 예시: https://cafe.naver.com/f-e/cafes/29657201/articles/1859
+  //           https://m.cafe.naver.com/ca-fe/web/cafes/29657201/articles/1955
   // 정규식 설명:
   //   (?:m\.)?        → "m." 이 있어도 되고 없어도 됨 (모바일 URL 대응)
   //   cafe\.naver\.com → cafe.naver.com 문자열 (점은 \.로 이스케이프)
-  //   \/f-e\/cafes\/  → /f-e/cafes/ 경로
+  //   (?:f-e|ca-fe\/web) → /f-e/ 또는 /ca-fe/web/ 경로 (모바일 웹 형태 대응)
+  //   \/cafes\/       → /cafes/ 경로
   //   (\d+)           → 숫자 1개 이상을 캡처 → 클럽ID
   //   \/articles\/    → /articles/ 경로
   //   (\d+)           → 숫자 1개 이상을 캡처 → 글번호
-  let match = decoded.match(/(?:m\.)?cafe\.naver\.com\/f-e\/cafes\/(\d+)\/articles\/(\d+)/);
+  let match = decoded.match(/(?:m\.)?cafe\.naver\.com\/(?:f-e|ca-fe\/web)\/cafes\/(\d+)\/articles\/(\d+)/);
   if (match) {
     // match[1] = 첫 번째 괄호 캡처 = 클럽ID
     // match[2] = 두 번째 괄호 캡처 = 글번호
