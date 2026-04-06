@@ -65,24 +65,29 @@ function parseCafeUrl(cafeUrl) {
 // 웹 페이지에서는 CORS 제한으로 네이버 API 직접 호출이 불가하므로,
 // 카페명 + 글번호 기반 검색 URL을 사용한다.
 // ------------------------------------------------------------
-function processUrl(cafeUrl) {
+function processUrl(cafeUrl, cafeName_override) {
   const parsed = parseCafeUrl(cafeUrl);
   let { clubId, cafeName, articleId } = parsed;
+
+  // 카페명을 사용자가 직접 입력한 경우 덮어쓰기
+  if (cafeName_override) {
+    cafeName = cafeName_override;
+  }
 
   if (!articleId) {
     return { success: false, message: "URL 형식이 맞지 않아요.\n네이버 카페 글 URL을 입력해주세요." };
   }
 
+  // cafeName 없이 clubId만 있으면 카페명 입력 요청
+  if (!cafeName && clubId) {
+    return { success: true, needCafeName: true, clubId, articleId };
+  }
+
   // 검색 경유 URL 생성
   let searchUrl = null;
   if (cafeName) {
-    // 카페명이 있으면 네이버 통합검색으로 검색
     const query = encodeURIComponent(`site:cafe.naver.com/${cafeName} ${articleId}`);
     searchUrl = `https://search.naver.com/search.naver?query=${query}`;
-  } else if (clubId) {
-    // 클럽ID만 있으면 카페 검색에서 글번호로 검색
-    const query = encodeURIComponent(articleId);
-    searchUrl = `https://section.cafe.naver.com/ca-fe/home/search/articles?q=${query}`;
   }
 
   // 직접 접근 URL
@@ -121,6 +126,40 @@ function showResult(result) {
     resultDiv.innerHTML = '<div class="result-card"><p class="error-msg">'
       + result.message.replace(/\n/g, "<br>") + '</p></div>';
     resultDiv.classList.add("show");
+    return;
+  }
+
+  // cafeName이 필요한 경우 입력 폼 표시
+  if (result.needCafeName) {
+    let html = '<div class="result-card">';
+    html += '<div class="info-row"><span class="info-label">클럽ID</span>'
+      + '<span class="info-value">' + escapeHtml(result.clubId) + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">글번호</span>'
+      + '<span class="info-value">' + escapeHtml(result.articleId) + '</span></div>';
+    html += '<p class="cafe-name-hint">URL에서 카페명을 찾을 수 없습니다.<br>'
+      + '카페 영문 이름을 입력해주세요.</p>';
+    html += '<div class="cafe-name-input-group">'
+      + '<input type="text" id="cafeNameInput" class="cafe-name-input" '
+      + 'placeholder="카페 영문 이름">'
+      + '<button class="btn-cafe-name" id="btnCafeName">확인</button>'
+      + '</div></div>';
+
+    resultDiv.innerHTML = html;
+    resultDiv.classList.add("show");
+
+    // 카페명 입력 후 확인 버튼 클릭
+    const cafeNameInput = document.getElementById("cafeNameInput");
+    document.getElementById("btnCafeName").addEventListener("click", () => {
+      const name = cafeNameInput.value.trim();
+      if (!name) return;
+      const retryResult = processUrl(urlInput.value.trim(), name);
+      showResult(retryResult);
+    });
+    // Enter 키 지원
+    cafeNameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("btnCafeName").click();
+    });
+    cafeNameInput.focus();
     return;
   }
 

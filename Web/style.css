@@ -155,3 +155,40 @@ textarea:focus {
   color: #aaa;
   text-align: center;
 }
+.cafe-name-hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #e67e22;
+  line-height: 1.6;
+}
+.cafe-name-input-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.cafe-name-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  -webkit-appearance: none;
+}
+.cafe-name-input:focus {
+  outline: none;
+  border-color: #03c75a;
+}
+.btn-cafe-name {
+  padding: 10px 16px;
+  background: #03c75a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-appearance: none;
+  white-space: nowrap;
+}
+.btn-cafe-name:active { background: #02a34a; }
