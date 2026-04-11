@@ -14,8 +14,8 @@ const resultDiv = document.getElementById("result");
 //
 // 지원 형태:
 //   형태1: https://cafe.naver.com/f-e/cafes/29657201/articles/1859
-//   형태2: https://cafe.naver.com/diveplan/1859
-//   형태3: https://cafe.naver.com/diveplan?iframe_url=...clubid=29657201&articleid=1859...
+//   형태2: https://cafe.naver.com/cafename/1859
+//   형태3: https://cafe.naver.com/cafename?iframe_url=...clubid=29657201&articleid=1859...
 // ------------------------------------------------------------
 function parseCafeUrl(cafeUrl) {
   let clubId = null;
@@ -137,10 +137,10 @@ function showResult(result) {
     html += '<div class="info-row"><span class="info-label">글번호</span>'
       + '<span class="info-value">' + escapeHtml(result.articleId) + '</span></div>';
     html += '<p class="cafe-name-hint">URL에서 카페명을 찾을 수 없습니다.<br>'
-      + '카페 영문 이름을 입력해주세요.</p>';
+      + '카페 영문 이름이나 이름이 포함된 URL을 입력해주세요.</p>';
     html += '<div class="cafe-name-input-group">'
       + '<input type="text" id="cafeNameInput" class="cafe-name-input" '
-      + 'placeholder="카페 영문 이름">'
+      + 'placeholder="카페 영문 이름 또는 URL">'
       + '<button class="btn-cafe-name" id="btnCafeName">확인</button>'
       + '</div></div>';
 
@@ -150,8 +150,14 @@ function showResult(result) {
     // 카페명 입력 후 확인 버튼 클릭
     const cafeNameInput = document.getElementById("cafeNameInput");
     document.getElementById("btnCafeName").addEventListener("click", () => {
-      const name = cafeNameInput.value.trim();
+      let name = cafeNameInput.value.trim();
       if (!name) return;
+      // 카페 URL 형태로 입력한 경우 카페명만 추출
+      // 예: https://cafe.naver.com/cafename → cafename
+      const urlMatch = name.match(/(?:m\.)?cafe\.naver\.com\/([a-zA-Z0-9_-]+)/);
+      if (urlMatch) {
+        name = urlMatch[1];
+      }
       const retryResult = processUrl(urlInput.value.trim(), name);
       showResult(retryResult);
     });
