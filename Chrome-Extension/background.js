@@ -11,14 +11,14 @@
 //
 // 네이버 카페 URL은 3가지 형태가 있다:
 //   형태1: https://cafe.naver.com/f-e/cafes/29657201/articles/1859
-//   형태2: https://cafe.naver.com/diveplan/1859
-//   형태3: https://cafe.naver.com/diveplan?iframe_url=...clubid=29657201&articleid=1859...
+//   형태2: https://cafe.naver.com/cafename/1859
+//   형태3: https://cafe.naver.com/cafename?iframe_url=...clubid=29657201&articleid=1859...
 //
 // 반환값: { clubId, cafeName, articleId } 객체
 // ------------------------------------------------------------
 function parseCafeUrl(cafeUrl) {
   let clubId = null;     // 카페 고유 숫자 ID (예: 29657201)
-  let cafeName = null;   // 카페 영문 이름 (예: diveplan)
+  let cafeName = null;   // 카페 영문 이름 (예: cafename)
   let articleId = null;  // 게시글 번호 (예: 1859)
 
   // URL 디코딩 - 인코딩된 특수문자를 원래 문자로 변환
@@ -48,7 +48,7 @@ function parseCafeUrl(cafeUrl) {
   }
 
   // ---- 형태2 매칭 ----
-  // URL 예시: https://cafe.naver.com/diveplan/1859
+  // URL 예시: https://cafe.naver.com/cafename/1859
   // 정규식 설명:
   //   ([a-zA-Z0-9_-]+) → 영문, 숫자, 밑줄, 하이픈으로 된 카페명 캡처
   //   \/(\d+)          → /글번호 캡처
@@ -60,7 +60,7 @@ function parseCafeUrl(cafeUrl) {
   }
 
   // ---- 형태3 매칭 ----
-  // URL 예시: https://cafe.naver.com/diveplan?iframe_url=...clubid=29657201&articleid=1859...
+  // URL 예시: https://cafe.naver.com/cafename?iframe_url=...clubid=29657201&articleid=1859...
   // 카페명, clubid, articleid를 각각 따로 추출한다
 
   // 카페명 추출: cafe.naver.com/ 뒤의 영문 이름 (? 앞까지)
@@ -116,7 +116,7 @@ async function getCafeInfoFromArticleApi(clubId, articleId) {
     }
 
     // 401 비로그인 에러여도 "more" 필드에 카페 정보가 포함됨
-    // 예: { result: { more: { cafeUrl: "diveplan", ... } } }
+    // 예: { result: { more: { cafeUrl: "cafename", ... } } }
     const more = data?.result?.more;
     if (!cafeName && more) {
       cafeName = more.cafeUrl || null;
@@ -133,7 +133,7 @@ async function getCafeInfoFromArticleApi(clubId, articleId) {
 // 카페 영문 이름만 알고 클럽ID를 모를 때,
 // 카페 메인 페이지의 HTML에서 clubid를 추출한다.
 //
-// 예: "diveplan" → 카페 페이지 HTML에서 "clubid=29657201" 찾기
+// 예: "cafename" → 카페 페이지 HTML에서 "clubid=29657201" 찾기
 //
 // 반환값: 클럽ID 문자열 또는 null
 // ------------------------------------------------------------
